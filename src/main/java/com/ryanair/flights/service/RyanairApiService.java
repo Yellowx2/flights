@@ -1,6 +1,7 @@
 package com.ryanair.flights.service;
 
 import com.ryanair.flights.config.RyanairConfig;
+import com.ryanair.flights.model.Month;
 import com.ryanair.flights.model.Route;
 import com.ryanair.flights.utils.CommonConstants;
 
@@ -33,6 +34,17 @@ public class RyanairApiService implements IRyanairApi {
 
         return getRoutes().filter(route -> route.getConnectingAirport() == null)
                 .filter(route -> CommonConstants.RYANAIR.equals(route.getOperator()));
+    }
+
+    @Override
+    public Flux<Month> getScheduledFlights(String departure, String arrival, int year, int month) {
+
+        return WebClient.create(config.getSchedule().getUrl())
+                .get()
+                .uri(ub -> ub.path(config.getSchedule().getPath()).build(departure, arrival, year, month))
+                .accept(MediaType.APPLICATION_JSON)
+                .retrieve()
+                .bodyToFlux(Month.class);
     }
 
 }
