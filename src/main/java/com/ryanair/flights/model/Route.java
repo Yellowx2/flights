@@ -1,26 +1,17 @@
 package com.ryanair.flights.model;
 
-import lombok.Getter;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@Getter
+@Data
+@NoArgsConstructor
 public final class Route {
 
-    private final String airportFrom;
-    private final String airportTo;
-    private final String connectingAirport;
-    private final boolean newRoute;
-    private final boolean seasonalRoute;
-    private final String operator;
-    private final String group;
-
-    public Route(String airportFrom, String airportTo, String connectingAirport, boolean newRoute,
-            boolean seasonalRoute, String operator, String group) {
-        this.airportFrom = airportFrom;
-        this.airportTo = airportTo;
-        this.connectingAirport = connectingAirport;
-        this.newRoute = newRoute;
-        this.seasonalRoute = seasonalRoute;
-        this.operator = operator;
-        this.group = group;
-    }
+    private String airportFrom;
+    private String airportTo;
+    private String connectingAirport;
+    private boolean newRoute;
+    private boolean seasonalRoute;
+    private String operator;
+    private String group;
 }
