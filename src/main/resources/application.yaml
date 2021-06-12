@@ -4,3 +4,6 @@ ryanair:
   route:
     url: https://services-api.ryanair.com
     path: /locate/3/routes
+  schedule:
+    url: https://timtbl-api.ryanair.com
+    path: /3/schedules/{departure}/{arrival}/years/{year}/months/{month}
