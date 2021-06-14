@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 @Service
 public class RyanairApiService implements IRyanairApi {
@@ -37,14 +38,14 @@ public class RyanairApiService implements IRyanairApi {
     }
 
     @Override
-    public Flux<Month> getScheduledFlights(String departure, String arrival, int year, int month) {
+    public Mono<Month> getScheduledFlights(String departure, String arrival, int year, int month) {
 
         return WebClient.create(config.getSchedule().getUrl())
                 .get()
                 .uri(ub -> ub.path(config.getSchedule().getPath()).build(departure, arrival, year, month))
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve()
-                .bodyToFlux(Month.class);
+                .bodyToMono(Month.class);
     }
 
 }
