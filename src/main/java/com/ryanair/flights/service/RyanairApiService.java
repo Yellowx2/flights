@@ -4,15 +4,16 @@ import com.ryanair.flights.config.RyanairConfig;
 import com.ryanair.flights.model.Month;
 import com.ryanair.flights.model.Route;
 import com.ryanair.flights.utils.CommonConstants;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
-
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+/**
+ * Service for Ryanair API calls
+ */
 @Service
 public class RyanairApiService implements IRyanairApi {
 
