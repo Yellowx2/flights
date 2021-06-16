@@ -18,6 +18,7 @@ public class TestUtils {
     public static final String WROCLAW = "WRO";
     public static final String CARRIER_CODE = "FR";
     public static final String FLIGHT_NUMBER = "1926";
+    public static final String IBERIA = "IBERIA";
 
     public static Route createRoute(String departureAirport, String arrivalAirport) {
 
@@ -27,6 +28,21 @@ public class TestUtils {
         route.setNewRoute(false);
         route.setSeasonalRoute(false);
         route.setOperator(RYANAIR);
+        route.setGroup(GENERIC);
+
+        return route;
+    }
+
+    public static Route createRoute(String departureAirport, String arrivalAirport, String operator,
+            String connectingAirport) {
+
+        var route = new Route();
+        route.setAirportFrom(departureAirport);
+        route.setConnectingAirport(connectingAirport);
+        route.setAirportTo(arrivalAirport);
+        route.setNewRoute(false);
+        route.setSeasonalRoute(false);
+        route.setOperator(operator);
         route.setGroup(GENERIC);
 
         return route;

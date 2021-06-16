@@ -44,6 +44,7 @@ public class RyanairApiService implements IRyanairApi {
         return WebClient.create(config.getSchedule().getUrl())
                 .get()
                 .uri(ub -> ub.path(config.getSchedule().getPath()).build(departure, arrival, year, month))
+                .headers(h -> h.setContentType(MediaType.APPLICATION_JSON))
                 .accept(MediaType.APPLICATION_JSON)
                 .retrieve()
                 .bodyToMono(Month.class);
