@@ -3,6 +3,9 @@ package com.ryanair.flights.model;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Model for Ryanair routes API
+ */
 @Data
 @NoArgsConstructor
 public final class Route {
