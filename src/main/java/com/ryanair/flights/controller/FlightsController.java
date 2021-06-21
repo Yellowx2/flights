@@ -1,7 +1,11 @@
 package com.ryanair.flights.controller;
 
+import java.time.LocalDateTime;
+
+import com.ryanair.flights.model.Interconnection;
 import com.ryanair.flights.model.Month;
 import com.ryanair.flights.model.Route;
+import com.ryanair.flights.service.IFlight;
 import com.ryanair.flights.service.IRyanairApi;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +26,9 @@ public class FlightsController {
 
     @Autowired
     private IRyanairApi api;
+
+    @Autowired
+    private IFlight flight;
 
     /**
      * This method is only for testing purposes. It should not be in production-ready code but I'll leave it as part of my local testing process
@@ -49,6 +56,15 @@ public class FlightsController {
                                     @RequestParam int month) {
 
         return api.getScheduledFlights(departure, arrival, year, month);
+    }
+
+    @GetMapping(value = "/interconnections")
+    public Flux<Interconnection> getInterconnections(@RequestParam String departure,
+                                                    @RequestParam String arrival,
+                                                    @RequestParam String departureDateTime,
+                                                    @RequestParam String arrivalDateTime) {
+
+        return flight.getScheduledFlights(arrival, departure, LocalDateTime.parse(arrivalDateTime), LocalDateTime.parse(departureDateTime));
     }
 
 }

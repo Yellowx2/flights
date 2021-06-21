@@ -16,35 +16,68 @@ import com.ryanair.flights.utils.CommonConstants;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import lombok.extern.log4j.Log4j2;
+import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Schedulers;
+
 @Service
+@Log4j2
 public class FlightService implements IFlight {
 
     @Autowired
     private IRyanairApi api;
 
+    // @Override
+    // public Set<Interconnection> getScheduledFlights(String arrivalAirport, String departureAirport, LocalDateTime arrivalDateTime,
+    //                                                 LocalDateTime departureDateTime) {
+
+    //     // Get a list of the routes filtered by departure and arrival airports
+    //     Flux<Route> routes = api.getRyanairRoutes()
+    //             .filter(route -> departureAirport.equals(route.getAirportFrom())
+    //                     || arrivalAirport.equals(route.getAirportTo()));
+
+    //     Set<Interconnection> interconnections = new HashSet<>();
+
+    //     // Iterate through the routes
+    //     // TODO: could be switched for a doOnNext and return a Flux or Mono
+    //     routes.subscribe(route -> {
+
+    //         // Process direct flights
+    //         if (isDirectFlight(route, departureAirport, arrivalAirport)) {
+    //             addDirectFlights(arrivalDateTime, departureDateTime, interconnections, route);
+    //         } else {
+    //             addOneStopFlights(arrivalDateTime, departureDateTime, interconnections, route);
+    //         }
+    //     });
+
+    //     // routes.flatMap(mapper)
+
+    //     return interconnections;
+    // }
+
     @Override
-    public Set<Interconnection> getScheduledFlights(String arrivalAirport, String departureAirport, LocalDateTime arrivalDateTime,
+    public Flux<Interconnection> getScheduledFlights(String arrivalAirport, String departureAirport, LocalDateTime arrivalDateTime,
                                                     LocalDateTime departureDateTime) {
 
         // Get a list of the routes filtered by departure and arrival airports
-        var routes = api.getRyanairRoutes()
+        Flux<Route> routes = api.getRyanairRoutes()
                 .filter(route -> departureAirport.equals(route.getAirportFrom())
                         || arrivalAirport.equals(route.getAirportTo()));
 
-        Set<Interconnection> interconnections = new HashSet<>();
-
         // Iterate through the routes
-        routes.subscribe(route -> {
+        // TODO: could be switched for a doOnNext and return a Flux or Mono
+        return routes
+                .subscribeOn(Schedulers.boundedElastic())
+                .flatMap(route -> {
 
-            // Process direct flights
-            if (isDirectFlight(route, departureAirport, arrivalAirport)) {
-                addDirectFlights(arrivalDateTime, departureDateTime, interconnections, route);
-            } else {
-                addOneStopFlights(arrivalDateTime, departureDateTime, interconnections, route);
-            }
-        });
-
-        return interconnections;
+                    // Process direct flights
+                    if (isDirectFlight(route, departureAirport, arrivalAirport)) {
+                        return addDirectFlights(arrivalDateTime, departureDateTime, route);
+                    } else {
+                        return addOneStopFlights(arrivalDateTime, departureDateTime, route);
+                    }
+                })
+                .doOnNext(i -> log.info(i));
     }
 
     private void addDirectFlights(LocalDateTime arrivalDateTime, LocalDateTime departureDateTime, Set<Interconnection> interconnections, Route route) {
@@ -86,8 +119,55 @@ public class FlightService implements IFlight {
         });
     }
 
+    private Flux<Interconnection> addDirectFlights(LocalDateTime arrivalDateTime, LocalDateTime departureDateTime, Route route) {
+
+        Flux<Interconnection> response = Flux.empty();
+
+        // API call to obtain flights from a specific month. It should be done separately
+        var monthlyFlights = api.getScheduledFlights(route.getAirportFrom(), route.getAirportTo(), departureDateTime.getYear(),
+                departureDateTime.getMonthValue());
+
+        // Days will be filtered between arrival day and departure day and processed after that
+        monthlyFlights
+                .subscribeOn(Schedulers.boundedElastic())
+                .doOnNext(month -> {
+
+                    var dailyFlights = month.getDays().stream()
+                            .filter(day -> day.getDay() >= departureDateTime.getDayOfMonth()
+                                    && day.getDay() <= arrivalDateTime.getDayOfMonth())
+                            .collect(Collectors.toSet());
+
+                    dailyFlights.forEach(day -> {
+
+                        var legs = new HashSet<Leg>();
+
+                        // Add every flight from each day
+                        day.getFlights().forEach(flight -> {
+
+                            addLeg(route, legs,
+                                    LocalDateTime.of(LocalDate.of(departureDateTime.getYear(),
+                                            month.getMonth(), day.getDay()), LocalTime.parse(flight.getDepartureTime())),
+                                    LocalDateTime.of(LocalDate.of(arrivalDateTime.getYear(),
+                                            month.getMonth(), day.getDay()), LocalTime.parse(flight.getArrivalTime())),
+                                    flight);
+                        });
+
+                        if (!legs.isEmpty()) {
+                            response.concatWithValues(addInterconnections(legs)).subscribeOn(Schedulers.boundedElastic());
+                        }
+                    });
+            });
+
+        return response;
+    }
+
     private void addOneStopFlights(LocalDateTime arrivalDateTime, LocalDateTime departureDateTime, Set<Interconnection> interconnections, Route route) {
         //TODO
+    }
+
+    private Flux<Interconnection> addOneStopFlights(LocalDateTime arrivalDateTime, LocalDateTime departureDateTime, Route route) {
+        //TODO
+        return Flux.empty();
     }
 
     /**
@@ -134,6 +214,21 @@ public class FlightService implements IFlight {
 
             interconnections.add(interconnection);
         }
+    }
+
+    /**
+     * Adds flights to the set
+     *
+     * @param interconnections Response set
+     * @param legs
+     */
+    private Interconnection addInterconnections(HashSet<Leg> legs) {
+
+        var interconnection = new Interconnection();
+        interconnection.setLegs(legs);
+        interconnection.setStops(CommonConstants.DIRECT_FLIGHT);
+
+        return interconnection;
     }
 
 }
